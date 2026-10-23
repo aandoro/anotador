@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Mio Training - Registro y Seguimiento de Progresión de Fuerza">
+
+  <!-- PWA Theme Color -->
+  <meta name="theme-color" content="#1E88E5">
+
+  <!-- iOS PWA Meta Tags & Icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Mio Training">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Mio Training</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #F5F7FB;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    #loading-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #F5F7FB;
+      z-index: 9999;
+      transition: opacity 0.4s ease-out;
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #E3F2FD;
+      border-top: 4px solid #1E88E5;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    .loading-title {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #1E88E5;
+      letter-spacing: 0.5px;
+    }
+    .loading-subtitle {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #78909C;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading-indicator">
+    <div class="spinner"></div>
+    <div class="loading-title">Mio Training</div>
+    <div class="loading-subtitle">Cargando aplicación...</div>
+  </div>
+
+  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    function removeLoadingIndicator() {
+      var indicator = document.getElementById('loading-indicator');
+      if (indicator) {
+        indicator.style.opacity = '0';
+        indicator.style.pointerEvents = 'none';
+        setTimeout(function () {
+          if (indicator && indicator.parentNode) {
+            indicator.parentNode.removeChild(indicator);
+          }
+        }, 400);
+      }
+    }
+
+    window.addEventListener('flutter-first-frame', removeLoadingIndicator);
+
+    window.addEventListener('load', function () {
+      var checkInterval = setInterval(function () {
+        if (document.querySelector('flt-glass-pane') || document.querySelector('flutter-view')) {
+          clearInterval(checkInterval);
+          removeLoadingIndicator();
+        }
+      }, 100);
+
+      setTimeout(function () {
+        clearInterval(checkInterval);
+        removeLoadingIndicator();
+      }, 3500);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: mio-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    region: oregon
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: ENVIRONMENT
+        value: production
+      - key: BACKEND_CORS_ORIGINS
+        sync: false
+      - key: BACKEND_CORS_ORIGIN_REGEX
+        value: "^https?://(localhost|127\\.0\\.0\\.1)(:\\d+)?$"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPABASE_AVATARS_BUCKET
+        value: profiles
+      - key: USE_MOCK_AUTH
+        value: "false"
