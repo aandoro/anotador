@@ -68,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Icon(Icons.fitness_center, size: 54, color: AppColors.primary),
                       const SizedBox(height: 12),
                       const Text(
-                        'Mio App',
+                        'WODBook',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                       ),

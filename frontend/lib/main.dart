@@ -96,7 +96,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 16),
-              Text('Iniciando Mio App...', style: TextStyle(color: Colors.grey)),
+              Text('Iniciando WODBook...', style: TextStyle(color: Colors.grey)),
             ],
           ),
         ),
