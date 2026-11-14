@@ -37,4 +37,11 @@ flutter run -d windows
 ```
 
 ## Configuración de Red
-La URL base del backend se encuentra configurada en `lib/core/constants/api_endpoints.dart`. Si utilizas un emulador de Android, cambia `127.0.0.1` por `10.0.2.2`.
+La URL base del backend se inyecta en compile-time con `--dart-define=API_BASE_URL=...` (ver `lib/core/constants/api_endpoints.dart`). Sin ese define, el default es `http://127.0.0.1:8000`.
+
+## Despliegue en Vercel
+1. Root Directory del proyecto: `frontend`.
+2. En el panel de Vercel, definir `API_BASE_URL` = URL pública del backend en Render (sin barra final).
+3. El build usa `scripts/vercel_build.sh` + `vercel.json` (output `build/web`, rewrite SPA).
+
+Detalle completo: [`docs/despliegue_cloud_y_pwa.md`](../docs/despliegue_cloud_y_pwa.md).

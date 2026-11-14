@@ -49,3 +49,11 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```bash
 pytest -v
 ```
+
+## Despliegue en Render
+1. Blueprint: [`render.yaml`](../render.yaml) en la raíz del monorepo (Docker context `backend/`).
+2. Secretos y URLs (`SUPABASE_*`, `BACKEND_CORS_ORIGINS`) se cargan **solo** en el dashboard de Render; no van en el repo.
+3. Después de publicar el frontend en Vercel, setear `BACKEND_CORS_ORIGINS` con esa URL.
+4. Health check: `GET /api/v1/health`.
+
+Detalle completo: [`docs/despliegue_cloud_y_pwa.md`](../docs/despliegue_cloud_y_pwa.md).

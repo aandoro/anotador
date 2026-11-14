@@ -1,0 +1,5 @@
+* text=auto
+
+# Scripts ejecutados en Linux (Vercel / Docker) deben conservar LF.
+*.sh text eol=lf
+frontend/scripts/vercel_build.sh text eol=lf

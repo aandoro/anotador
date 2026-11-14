@@ -1,115 +1,121 @@
-# Guía de Despliegue y Uso: Backend FastAPI + Flutter Web PWA + Supabase
+# Guía de Despliegue: Backend en Render + Frontend en Vercel + Supabase
 
-Este documento describe cómo desplegar el **Backend (FastAPI)** y el **Frontend (Flutter Web como PWA)** en la nube conectados a **Supabase**, y cómo instalar y usar la aplicación desde el navegador del celular.
-
----
-
-## 1. Arquitectura de Despliegue
+Arquitectura objetivo:
 
 ```mermaid
 flowchart LR
-    Celular["📱 Navegador del Celular (PWA)"] -->|HTTPS REST| Backend["⚙️ Backend FastAPI\n(Render / Railway / Cloud Run)"]
-    Backend -->|Supabase Client| Supabase[("🗄️ Supabase\n(DB + Auth + Storage)")]
-    HostingWeb["🌐 Hosting Estático\n(Vercel / Cloudflare Pages / Netlify)"] -.->|Sirve la PWA| Celular
+  Celular["Navegador / PWA"] -->|HTTPS REST| Backend["Backend FastAPI\n(Render)"]
+  Backend -->|Client SDK| Supabase[("Supabase\nDB + Auth + Storage")]
+  Vercel["Vercel\n(Flutter Web)"] -.->|Sirve la PWA| Celular
 ```
 
-- **Base de Datos, Auth y Storage**: Alojados en **Supabase**.
-- **Backend (`backend/`)**: Servicio web en Python/FastAPI contenedorizado con [`backend/Dockerfile`](../backend/Dockerfile) y [`render.yaml`](../render.yaml).
-- **Frontend (`frontend/`)**: Progressive Web App (PWA) compilada con Flutter Web (`frontend/build/web`) lista para alojarse en cualquier CDN estático con HTTPS (Vercel, Cloudflare Pages, Firebase Hosting o Netlify).
+- **Supabase**: DB, Auth y Storage (fuera de este repo).
+- **Backend (`backend/`)**: Docker en **Render** vía [`render.yaml`](../render.yaml) + [`backend/Dockerfile`](../backend/Dockerfile).
+- **Frontend (`frontend/`)**: Flutter Web PWA en **Vercel** vía [`frontend/vercel.json`](../frontend/vercel.json) + [`frontend/scripts/vercel_build.sh`](../frontend/scripts/vercel_build.sh).
+
+Las variables de entorno **no se versionan**: se cargan en el panel de Render y en el panel de Vercel.
 
 ---
 
-## 2.Archivos de Configuración Incluidos en el Proyecto
+## Orden recomendado
 
-### Backend (`backend/`)
-- **[`backend/app/core/config.py`](../backend/app/core/config.py)** y **[`backend/app/main.py`](../backend/app/main.py)**:
-  - Soporta `BACKEND_CORS_ORIGINS` como lista JSON (`["https://mio-app.vercel.app"]`) o texto separado por comas (`https://mio-app.vercel.app,http://localhost:3000`).
-  - Limpia automáticamente barras finales (`/`) y excluye el comodín `"*"` para mantener compatibilidad con `allow_credentials=True`.
-  - Soporta `BACKEND_CORS_ORIGIN_REGEX` para habilitar dominios dinámicos (por ejemplo, previews de Vercel o Cloudflare).
-- **[`backend/Dockerfile`](../backend/Dockerfile)** y **[`backend/.dockerignore`](../backend/.dockerignore)**:
-  - Imagen liviana `python:3.11-slim` con usuario sin privilegios (`appuser`), healthcheck automático en `/api/v1/health` y arranque con `uvicorn` tomando la variable `$PORT`.
-- **[`render.yaml`](../render.yaml)**:
-  - Blueprint declarativo en la raíz del repositorio para desplegar el servicio en Render.
-
-### Frontend (`frontend/`)
-- **[`frontend/lib/core/constants/api_endpoints.dart`](../frontend/lib/core/constants/api_endpoints.dart)**:
-  - Lee la URL del backend en tiempo de compilación mediante `--dart-define=API_BASE_URL=...` (con fallback automático a `http://127.0.0.1:8000` para desarrollo local) y normaliza barras finales.
-- **[`frontend/web/manifest.json`](../frontend/web/manifest.json)** y **[`frontend/web/index.html`](../frontend/web/index.html)**:
-  - Configurados con `"display": "standalone"`, `"orientation": "portrait-primary"`, colores `#1E88E5` / `#F5F7FB`, iconos `192x192` y `512x512`, meta-tags para iOS/Safari (`apple-mobile-web-app-capable`) y pantalla de carga inicial.
-- **[`frontend/vercel.json`](../frontend/vercel.json)** y **[`frontend/web/_redirects`](../frontend/web/_redirects)**:
-  - Reglas de reescritura SPA (`/(.*) -> /index.html`) y cabeceras de caché óptimas para el Service Worker de la PWA.
+1. Desplegar el **backend en Render** y copiar su URL pública.
+2. Desplegar el **frontend en Vercel** con `API_BASE_URL` = URL del backend.
+3. Volver a Render y setear `BACKEND_CORS_ORIGINS` con la URL del frontend en Vercel.
 
 ---
 
-## 3. Paso a Paso para Desplegar
+## 1. Backend en Render
 
-### Paso 1: Desplegar el Backend en Render (o Railway / Cloud Run)
+### Archivos listos
 
-1. Sube tus cambios al repositorio de GitHub.
-2. Ingresa a [Render.com](https://render.com) → **New +** → **Blueprint** (detectará el archivo [`render.yaml`](../render.yaml) de la raíz) o crea un **Web Service** apuntando a tu repositorio.
-3. En la sección **Environment Variables** del servicio en Render, configura las credenciales que usas en tu `.env` local:
-   - `SUPABASE_URL`: URL de tu proyecto en Supabase.
-   - `SUPABASE_KEY`: Anon/Public key de Supabase.
-   - `SUPABASE_SERVICE_ROLE_KEY`: Service Role key de Supabase.
-   - `SUPABASE_JWT_SECRET`: JWT Secret de tu proyecto en Supabase.
-   - `SUPABASE_AVATARS_BUCKET`: `profiles`
-   - `USE_MOCK_AUTH`: `false`
-   - `BACKEND_CORS_ORIGINS`: URL pública donde alojarás la PWA (ej. `https://mio-training.vercel.app`).
-   - `BACKEND_CORS_ORIGIN_REGEX`: `^https://.*\.vercel\.app$` *(opcional, recomendado si usas Vercel para permitir cualquier URL de preview).*
-4. Una vez finalizado el despliegue, copia la URL pública de tu backend (ej. `https://mio-backend.onrender.com`) y verifica que responda abriendo `https://mio-backend.onrender.com/api/v1/health`.
+| Archivo | Rol |
+| --- | --- |
+| [`render.yaml`](../render.yaml) | Blueprint: Docker, healthcheck `/api/v1/health`, env keys |
+| [`backend/Dockerfile`](../backend/Dockerfile) | Imagen `python:3.11-slim`, usuario no privilegiado, `uvicorn` en `$PORT` |
+| [`backend/.env.example`](../backend/.env.example) | Referencia de keys (sin secretos) |
 
-> [!NOTE]
-> En el plan gratuito de Render, el contenedor entra en reposo tras 15 minutos sin actividad y la primera petición puede demorar ~30 segundos en despertar. Si deseas evitar ese arranque en frío, puedes configurar un monitor gratuito (como UptimeRobot o Cron-job.org) que consulte `/api/v1/health` cada 10–14 minutos, o desplegar el mismo `backend/Dockerfile` en **Google Cloud Run** / **Railway**.
+### Pasos
 
----
+1. Conectar el repositorio en [Render](https://render.com) → **New +** → **Blueprint** (usa `render.yaml`) o **Web Service** con:
+   - Root / Docker context: `backend`
+   - Dockerfile: `backend/Dockerfile`
+2. En **Environment** del servicio, cargar (valores reales solo en el panel):
 
-### Paso 2: Compilar y Publicar la PWA de Flutter
+| Variable | Dónde | Notas |
+| --- | --- | --- |
+| `SUPABASE_URL` | Panel | Project URL de Supabase |
+| `SUPABASE_KEY` | Panel | Anon/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Panel | Service role (solo backend) |
+| `SUPABASE_JWT_SECRET` | Panel | JWT secret del proyecto |
+| `BACKEND_CORS_ORIGINS` | Panel | URL del FE en Vercel, ej. `https://mio-app.vercel.app` (después del paso 2) |
+| `SUPABASE_AVATARS_BUCKET` | Blueprint default `profiles` | Debe coincidir con el bucket real |
+| `USE_MOCK_AUTH` | Blueprint default `false` | No activar en producción |
+| `BACKEND_CORS_ORIGIN_REGEX` | Blueprint | Ya incluye `*.vercel.app` + localhost |
+| `PORT` / `ENVIRONMENT` | Blueprint | `8000` / `production` |
 
-1. Abre una terminal en `C:\Aplicaciones\mio\frontend` y compila la versión de producción inyectando la URL de tu backend:
-   ```powershell
-   flutter build web --release --dart-define=API_BASE_URL=https://mio-backend.onrender.com
-   ```
-   Esto generará la carpeta estática lista para producción en `frontend/build/web`.
+3. Verificar: `https://<servicio>.onrender.com/api/v1/health`
 
-2. Publica el contenido de `frontend/build/web` en tu hosting estático preferido:
-
-   - **Opción A — Vercel CLI (Rápida desde terminal)**:
-     ```powershell
-     Copy-Item vercel.json build/web/vercel.json
-     npx vercel deploy build/web --prod
-     ```
-   - **Opción B — Cloudflare Pages / Netlify (Drag & Drop)**:
-     1. Entra al panel de **Cloudflare Pages** o **Netlify**.
-     2. Elige subir carpeta manualmente (*Upload assets* / *Deploy manually*).
-     3. Arrastra la carpeta `frontend/build/web` (que ya incluye el archivo `_redirects`).
-
-3. Copia la URL `https://...` generada por Vercel/Cloudflare y asegúrate de que esté agregada en la variable `BACKEND_CORS_ORIGINS` de tu backend en Render.
+> En el plan free de Render el servicio duerme tras ~15 min. La primera request puede tardar ~30 s.
 
 ---
 
-### Paso 3: Instalar y Usar la PWA en el Celular
+## 2. Frontend en Vercel
 
-1. Abre la URL `https://...` de tu PWA desde el navegador de tu teléfono:
-   - **En Android (Google Chrome)**:
-     1. Toca el menú de tres puntos `⋮` (esquina superior derecha).
-     2. Selecciona **"Instalar aplicación"** o **"Agregar a la pantalla principal"**.
-   - **En iPhone / iOS (Safari)**:
-     1. Toca el botón **Compartir** (ícono cuadrado con flecha hacia arriba en la barra inferior).
-     2. Desliza hacia abajo y selecciona **"Agregar a inicio"** (*Add to Home Screen*).
-     3. Toca **"Agregar"** arriba a la derecha.
-2. Verás el ícono de **Mio Training** en la pantalla de inicio de tu celular y, al abrirlo, se ejecutará a pantalla completa (`standalone`) como una aplicación nativa sin las barras del navegador.
+### Archivos listos
+
+| Archivo | Rol |
+| --- | --- |
+| [`frontend/vercel.json`](../frontend/vercel.json) | Build Flutter, output `build/web`, SPA rewrites, cache PWA |
+| [`frontend/scripts/vercel_build.sh`](../frontend/scripts/vercel_build.sh) | Instala Flutter stable y compila con `API_BASE_URL` |
+| [`frontend/lib/core/constants/api_endpoints.dart`](../frontend/lib/core/constants/api_endpoints.dart) | Lee `API_BASE_URL` en compile-time |
+
+### Pasos
+
+1. En [Vercel](https://vercel.com) → **Add New Project** → mismo repo.
+2. Settings del proyecto:
+   - **Root Directory**: `frontend`
+   - Framework Preset: **Other** (lo define `vercel.json`)
+3. En **Environment Variables** del proyecto Vercel:
+
+| Variable | Valor | Entornos |
+| --- | --- | --- |
+| `API_BASE_URL` | `https://<servicio>.onrender.com` | Production (y Preview si querés apuntar al mismo BE) |
+
+Sin `API_BASE_URL` el build **falla a propósito** para no publicar la app apuntando a `127.0.0.1`.
+
+4. Deploy. La URL queda tipo `https://<proyecto>.vercel.app`.
+5. Volvé a Render y setea `BACKEND_CORS_ORIGINS` con esa URL (sin barra final). Redeploy del backend o “Manual Deploy” si hace falta.
+
+### Build local equivalente
+
+```powershell
+cd frontend
+flutter build web --release --dart-define=API_BASE_URL=https://mio-backend.onrender.com
+```
 
 ---
 
-## 4. Comandos Útiles para Desarrollo Local
+## 3. Instalar la PWA en el celular
 
-- **Ejecutar en navegador local apuntando al backend local (`127.0.0.1:8000`)**:
-  ```powershell
-  cd frontend
-  flutter run -d chrome
-  ```
-- **Ejecutar en navegador local apuntando al backend en la nube**:
-  ```powershell
-  cd frontend
-  flutter run -d chrome --dart-define=API_BASE_URL=https://mio-backend.onrender.com
-  ```
+1. Abrí la URL de Vercel en el navegador del teléfono.
+2. **Android (Chrome)**: menú `⋮` → Instalar aplicación / Agregar a la pantalla principal.
+3. **iOS (Safari)**: Compartir → Agregar a inicio.
+
+---
+
+## 4. Desarrollo local
+
+```powershell
+# Backend
+cd backend
+# Copiar .env.example → .env y completar keys locales
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+# Frontend (default API_BASE_URL = http://127.0.0.1:8000)
+cd frontend
+flutter run -d chrome --web-port=3000
+
+# Frontend apuntando al BE en Render
+flutter run -d chrome --web-port=3000 --dart-define=API_BASE_URL=https://mio-backend.onrender.com
+```

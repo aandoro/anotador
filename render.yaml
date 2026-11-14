@@ -1,9 +1,14 @@
+# Blueprint de Render para el backend FastAPI.
+# Secretos y URLs de producción se cargan en el dashboard de Render
+# (Environment → Environment Variables). No versionar valores reales.
 services:
   - type: web
     name: mio-backend
     runtime: docker
-    dockerfilePath: backend/Dockerfile
-    dockerContext: backend
+    # Monorepo: todo relativo a backend/ (ahi estan Dockerfile y requirements.txt)
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     plan: free
     region: oregon
     healthCheckPath: /api/v1/health
@@ -12,10 +17,13 @@ services:
         value: 8000
       - key: ENVIRONMENT
         value: production
+      # URL exacta del frontend en Vercel (ej. https://mio-app.vercel.app).
+      # Configurar en el panel de Render después del primer deploy del FE.
       - key: BACKEND_CORS_ORIGINS
         sync: false
+      # Previews de Vercel + localhost para desarrollo contra el BE en la nube.
       - key: BACKEND_CORS_ORIGIN_REGEX
-        value: "^https?://(localhost|127\\.0\\.0\\.1)(:\\d+)?$"
+        value: "^https://.*\\.vercel\\.app$|^https?://(localhost|127\\.0\\.0\\.1)(:\\d+)?$"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
