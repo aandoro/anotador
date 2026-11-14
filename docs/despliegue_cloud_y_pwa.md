@@ -48,7 +48,7 @@ Las variables de entorno **no se versionan**: se cargan en el panel de Render y 
 | `SUPABASE_KEY` | Panel | Anon/public key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Panel | Service role (solo backend) |
 | `SUPABASE_JWT_SECRET` | Panel | JWT secret del proyecto |
-| `BACKEND_CORS_ORIGINS` | Panel | URL del FE en Vercel, ej. `https://mio-app.vercel.app` (después del paso 2) |
+| `BACKEND_CORS_ORIGINS` | Panel / blueprint | JSON, nunca vacío. Arrancar con `[]`; después del FE: `["https://mio-app.vercel.app"]` |
 | `SUPABASE_AVATARS_BUCKET` | Blueprint default `profiles` | Debe coincidir con el bucket real |
 | `USE_MOCK_AUTH` | Blueprint default `false` | No activar en producción |
 | `BACKEND_CORS_ORIGIN_REGEX` | Blueprint | Ya incluye `*.vercel.app` + localhost |

@@ -17,10 +17,10 @@ services:
         value: 8000
       - key: ENVIRONMENT
         value: production
-      # URL exacta del frontend en Vercel (ej. https://mio-app.vercel.app).
-      # Configurar en el panel de Render después del primer deploy del FE.
+      # Lista JSON. No dejar vacío: usar [] hasta tener la URL del FE en Vercel.
+      # Después reemplazar en el panel, ej. ["https://mio-app.vercel.app"]
       - key: BACKEND_CORS_ORIGINS
-        sync: false
+        value: "[]"
       # Previews de Vercel + localhost para desarrollo contra el BE en la nube.
       - key: BACKEND_CORS_ORIGIN_REGEX
         value: "^https://.*\\.vercel\\.app$|^https?://(localhost|127\\.0\\.0\\.1)(:\\d+)?$"

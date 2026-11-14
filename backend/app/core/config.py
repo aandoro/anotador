@@ -1,7 +1,7 @@
 import json
-from typing import List, Optional, Union
+from typing import Annotated, List, Optional, Union
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -10,8 +10,9 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     VERSION: str = "0.1.0"
 
-    # Configuración de CORS
-    BACKEND_CORS_ORIGINS: List[str] = [
+    # NoDecode: evita que pydantic-settings intente json.loads("") y tire SettingsError
+    # cuando la env viene vacía desde Render/Vercel.
+    BACKEND_CORS_ORIGINS: Annotated[List[str], NoDecode] = [
         "http://localhost",
         "http://localhost:3000",
         "http://localhost:8000",
@@ -23,16 +24,19 @@ class Settings(BaseSettings):
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+    def assemble_cors_origins(cls, v: Union[str, List[str], None]) -> List[str]:
         """
         Valida y normaliza la lista de orígenes permitidos.
         Soporta:
+          - None / string vacío → lista vacía (CORS solo por regex si está seteado)
           - Listas nativas de Python
           - Strings con formato JSON: '["https://mio.vercel.app"]'
           - Strings delimitados por comas: 'https://a.com, https://b.com'
         Elimina espacios en blanco, remueve trailing slashes y descarta el comodín '*'
         para mantener compatibilidad estricta con allow_credentials=True.
         """
+        if v is None:
+            return []
         if isinstance(v, str):
             v_trimmed = v.strip()
             if not v_trimmed:

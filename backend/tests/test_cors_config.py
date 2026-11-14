@@ -3,6 +3,17 @@ from app.core.config import Settings
 from app.main import app
 
 
+def test_cors_origins_empty_env_string():
+    """Render puede inyectar BACKEND_CORS_ORIGINS="" ; no debe romper el boot."""
+    settings = Settings(BACKEND_CORS_ORIGINS="")
+    assert settings.BACKEND_CORS_ORIGINS == []
+
+
+def test_cors_origins_empty_json_array():
+    settings = Settings(BACKEND_CORS_ORIGINS="[]")
+    assert settings.BACKEND_CORS_ORIGINS == []
+
+
 def test_cors_origins_csv_parsing():
     settings = Settings(BACKEND_CORS_ORIGINS="https://app.vercel.app, http://localhost:3000/")
     assert "https://app.vercel.app" in settings.BACKEND_CORS_ORIGINS
